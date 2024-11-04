@@ -3,62 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Protein Generator</title>
+    <title>Protein Ribbon Structure Generator</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
             margin: 0;
-            padding: 20px;
-            background-color: #f4f4f4;
+            overflow: hidden;
+            background-color: #222; /* Dark background for better contrast */
         }
-        header {
-            background: #35424a;
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
             color: white;
-            padding: 10px 0;
-            text-align: center;
+            z-index: 10;
         }
-        .container {
-            max-width: 800px;
-            margin: auto;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        canvas {
+            display: block; /* Remove any padding or margin */
         }
-        h1 {
-            margin-bottom: 20px;
-        }
-        .button {
-            padding: 10px 15px;
-            margin: 10px 0;
-            background-color: #28a745;
+        #saved-proteins {
+            position: absolute;
+            top: 80px;
+            left: 20px;
             color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .button:hover {
-            background-color: #218838;
-        }
-        .protein {
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background: #e2f0d9;
+            z-index: 10;
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Protein Generator</h1>
-    </header>
-    <div class="container">
-        <button class="button" id="generate-protein">Generate Random Protein</button>
-        <div class="protein" id="protein-display"></div>
+    <div id="info">
+        <button id="generate-protein">Generate Random Protein</button>
+        <div id="protein-display"></div>
     </div>
-
+    <div id="saved-proteins">
+        <h3>Saved Proteins:</h3>
+        <ul id="protein-list"></ul>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
+        let scene, camera, renderer;
+
+        // Initialize the Three.js scene
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // Add light
+            const light = new THREE.AmbientLight(0xffffff, 1); // Soft white light
+            scene.add(light);
+
+            camera.position.set(0, 0, 50); // Move the camera away from the origin
+
+            animate(); // Start the animation loop
+
+            // Load saved proteins from local storage
+            loadSavedProteins();
+        }
+
         // Function to generate a random protein sequence
         function generateRandomProtein(length) {
             const aminoAcids = 'ACDEFGHIKLMNPQRSTVWY'; // Standard amino acids
@@ -70,11 +74,140 @@
             return protein;
         }
 
+        // Function to get a random color for each amino acid
+        function getColorForAminoAcid(aminoAcid) {
+            const colors = {
+                'A': 0xff9999, // Alanine
+                'C': 0xffcc99, // Cysteine
+                'D': 0xffff99, // Aspartic Acid
+                'E': 0xccff99, // Glutamic Acid
+                'F': 0x99ff99, // Phenylalanine
+                'G': 0x99ccff, // Glycine
+                'H': 0x9999ff, // Histidine
+                'I': 0xcc99ff, // Isoleucine
+                'K': 0xffccff, // Lysine
+                'L': 0xff99cc, // Leucine
+                'M': 0xc2c2f0, // Methionine
+                'N': 0xc2f0c2, // Asparagine
+                'P': 0xf0c2c2, // Proline
+                'Q': 0xf0e0c2, // Glutamine
+                'R': 0xe0f0c2, // Arginine
+                'S': 0xc2e0f0, // Serine
+                'T': 0xc2f0e0, // Threonine
+                'V': 0xf0f0c2, // Valine
+                'W': 0xf2c2c2, // Tryptophan
+                'Y': 0xd0c2f0  // Tyrosine
+            };
+            return colors[aminoAcid] || 0xffffff; // Default to white if not found
+        }
+
+        // Function to visualize the protein ribbon structure
+        function drawProteinRibbon(protein) {
+            const spacing = 3; // Spacing between amino acids
+            const points = [];
+
+            for (let i = 0; i < protein.length; i++) {
+                const aminoAcid = protein[i];
+                const color = getColorForAminoAcid(aminoAcid);
+
+                // Calculate positions for a wavy ribbon effect
+                const x = i * spacing;
+                const y = Math.sin(i * 0.5) * 5; // Create a wave effect
+                const z = Math.cos(i * 0.5) * 5;
+
+                points.push(new THREE.Vector3(x, y, z)); // Store position for the line
+
+                // Create a sphere for each amino acid
+                const geometry = new THREE.SphereGeometry(0.5, 16, 16);
+                const material = new THREE.MeshStandardMaterial({ color: color });
+                const sphere = new THREE.Mesh(geometry, material);
+
+                // Position the sphere
+                sphere.position.set(x, y, z);
+                scene.add(sphere);
+            }
+
+            // Create a curve from the points
+            const curve = new THREE.CatmullRomCurve3(points);
+            const tubeGeometry = new THREE.TubeGeometry(curve, 20, 0.2, 8, false);
+            const tubeMaterial = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.5 });
+            const tubeMesh = new THREE.Mesh(tubeGeometry, tubeMaterial);
+            scene.add(tubeMesh);
+
+            // Center the camera based on the protein length
+            camera.position.x = (protein.length * spacing) / 2; // Center camera horizontally
+            camera.position.y = 15; // Adjust the height
+            camera.position.z = 50; // Distance from the object
+            camera.lookAt((protein.length * spacing) / 2, 0, 0); // Look at the center of the protein
+        }
+
+        // Function to save protein to local storage
+        function saveProtein(protein) {
+            let savedProteins = JSON.parse(localStorage.getItem('proteins')) || [];
+            savedProteins.push(protein);
+            localStorage.setItem('proteins', JSON.stringify(savedProteins));
+            loadSavedProteins(); // Reload saved proteins
+        }
+
+        // Function to load saved proteins from local storage
+        function loadSavedProteins() {
+            const proteinList = document.getElementById('protein-list');
+            proteinList.innerHTML = ''; // Clear existing list
+            const savedProteins = JSON.parse(localStorage.getItem('proteins')) || [];
+
+            savedProteins.forEach((protein, index) => {
+                const li = document.createElement('li');
+                li.innerText = protein;
+                const deleteButton = document.createElement('button');
+                deleteButton.innerText = 'Delete';
+                deleteButton.style.marginLeft = '10px';
+                deleteButton.onclick = function() {
+                    deleteProtein(index);
+                };
+                li.appendChild(deleteButton);
+                proteinList.appendChild(li);
+            });
+        }
+
+        // Function to delete a protein from local storage
+        function deleteProtein(index) {
+            let savedProteins = JSON.parse(localStorage.getItem('proteins')) || [];
+            savedProteins.splice(index, 1); // Remove the protein
+            localStorage.setItem('proteins', JSON.stringify(savedProteins));
+            loadSavedProteins(); // Reload saved proteins
+        }
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
         // Event listener for the button
         document.getElementById('generate-protein').addEventListener('click', function() {
             const length = Math.floor(Math.random() * (31)) + 20; // Random length between 20 and 50
             const protein = generateRandomProtein(length);
             document.getElementById('protein-display').innerText = `Generated Protein: ${protein}`;
+
+            // Clear the previous structure
+            while (scene.children.length > 1) {
+                scene.remove(scene.children[1]); // Remove all but the light
+            }
+
+            // Draw the protein ribbon visualization
+            drawProteinRibbon(protein);
+
+            // Save the generated protein
+            saveProtein(protein);
+        });
+
+        init(); // Initialize the scene
+
+        // Handle window resizing
+        window.addEventListener('resize', function() {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
         });
     </script>
 </body>
