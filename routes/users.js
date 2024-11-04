@@ -1,11 +1,16 @@
+// routes/users.js
 const express = require('express');
 const User = require('../models/User');
 const router = express.Router();
 
 // GET all users
 router.get('/', async (req, res) => {
-  const users = await User.find();
-  res.json(users);
+  try {
+    const users = await User.find();
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 // POST create user
@@ -19,4 +24,5 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Other routes: PATCH, DELETE...
+// Export the router
+module.exports = router;
