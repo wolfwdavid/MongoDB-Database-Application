@@ -17,11 +17,13 @@ mongoose.connect('mongodb://localhost/myapp', { useNewUrlParser: true, useUnifie
 const userRoutes = require('./routes/users');
 const postRoutes = require('./routes/posts');
 const commentRoutes = require('./routes/comments');
+const proteinRoutes = require('./routes/proteins'); // Import protein routes
 
 // Use routes
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/comments', commentRoutes);
+app.use('/api/proteins', proteinRoutes); // Add protein routes
 
 // Start server
 app.listen(PORT, () => {
