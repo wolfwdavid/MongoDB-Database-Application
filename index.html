@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Blog App</title>
+    <title>Protein Generator</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -28,71 +28,54 @@
         h1 {
             margin-bottom: 20px;
         }
-        .post {
-            margin: 20px 0;
+        .button {
+            padding: 10px 15px;
+            margin: 10px 0;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .button:hover {
+            background-color: #218838;
+        }
+        .protein {
+            margin-top: 20px;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
-        }
-        .post h2 {
-            margin: 0;
-        }
-        .post p {
-            color: #555;
+            background: #e2f0d9;
         }
     </style>
 </head>
 <body>
     <header>
-        <h1>Proteins</h1>
+        <h1>Protein Generator</h1>
     </header>
     <div class="container">
-        <h2>Proteins</h2>
-        <div id="posts"></div>
-        <h2>Info</h2>
-        <div id="users"></div>
+        <button class="button" id="generate-protein">Generate Random Protein</button>
+        <div class="protein" id="protein-display"></div>
     </div>
 
     <script>
-        // Fetch and display posts
-        async function fetchPosts() {
-            try {
-                const response = await fetch('/api/posts');
-                const posts = await response.json();
-                const postsContainer = document.getElementById('posts');
-                posts.forEach(post => {
-                    const postDiv = document.createElement('div');
-                    postDiv.classList.add('post');
-                    postDiv.innerHTML = `<h2>${post.title}</h2><p>${post.content}</p>`;
-                    postsContainer.appendChild(postDiv);
-                });
-            } catch (error) {
-                console.error('Error fetching posts:', error);
+        // Function to generate a random protein sequence
+        function generateRandomProtein(length) {
+            const aminoAcids = 'ACDEFGHIKLMNPQRSTVWY'; // Standard amino acids
+            let protein = '';
+            for (let i = 0; i < length; i++) {
+                const randomIndex = Math.floor(Math.random() * aminoAcids.length);
+                protein += aminoAcids[randomIndex];
             }
+            return protein;
         }
 
-        // Fetch and display users
-        async function fetchUsers() {
-            try {
-                const response = await fetch('/api/users');
-                const users = await response.json();
-                const usersContainer = document.getElementById('users');
-                users.forEach(user => {
-                    const userDiv = document.createElement('div');
-                    userDiv.classList.add('post'); // Reusing the same style
-                    userDiv.innerHTML = `<h2>${user.name}</h2><p>${user.email}</p>`;
-                    usersContainer.appendChild(userDiv);
-                });
-            } catch (error) {
-                console.error('Error fetching users:', error);
-            }
-        }
-
-        // Load posts and users when the page loads
-        window.onload = () => {
-            fetchPosts();
-            fetchUsers();
-        };
+        // Event listener for the button
+        document.getElementById('generate-protein').addEventListener('click', function() {
+            const length = Math.floor(Math.random() * (31)) + 20; // Random length between 20 and 50
+            const protein = generateRandomProtein(length);
+            document.getElementById('protein-display').innerText = `Generated Protein: ${protein}`;
+        });
     </script>
 </body>
 </html>
